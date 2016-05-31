@@ -1,11 +1,16 @@
+'use strict';
+
+const async = require('async');
+const mysql = require('mysql');
+const FB = require("./facebook.action");
+
 module.exports = {
-    say(sessionId, context, message, cb) {
-        // Our bot has something to say!
-        const recipientId = sessions[sessionId].fbid;
+    say(recipientId, context, message, cb) {
+
         if (recipientId) {
             // Yay, we found our recipient!
             // Let's forward our bot response to her.
-            fbMessage(recipientId, message, (err, data) => {
+            FB.sendText(recipientId, message, (err, data) => {
                 if (err) {
                     console.log(
                         'Oops! An error occurred while forwarding the response to',
@@ -14,7 +19,6 @@ module.exports = {
                         err
                     );
                 }
-
                 // Let's give the wheel back to our bot
                 cb();
             });
@@ -25,31 +29,42 @@ module.exports = {
         }
     },
 
-    merge(sessionId, context, entities, message, cb) {
+    merge(recipientId, context, entities, message, cb) {
 
-        for (var k in entities) {
-            const value = firstEntityValue(entities, k);
-            if (value) {
-                context[k] = value;
+        async.forEachOf(entities, (entity, key, cb) => {
+            const value = firstEntityValue(entity);
+            console.error("Result", key, value);
+            if (value != null && (context[key] == null || context[key] != value)) {
+
+                switch (key) {
+                    default:
+                        cb();
+                }
             }
-        }
+            else
+                cb();
 
-        console.log("Context after merge", context);
-        cb(context);
+        }, (error) => {
+            if (error) {
+                console.error(error);
+            } else {
+                console.log("Context after merge:\n", context);
+                cb(context);
+            }
+        });
     },
-    error(sessionId, context, error) {
+    error(recipientId, context, error) {
         console.log(error.message);
     },
 
-    //Add your own functions HERE
+    /**** Add your own functions HERE ******/
 };
 
 // Helper function to get the first message
-const firstEntityValue = (entities, entity) => {
-    const val = entities && entities[entity] &&
-            Array.isArray(entities[entity]) &&
-            entities[entity].length > 0 &&
-            entities[entity][0].value
+const firstEntityValue = (entity) => {
+    const val = entity && Array.isArray(entity) &&
+            entity.length > 0 &&
+            entity[0].value
         ;
     if (!val) {
         return null;

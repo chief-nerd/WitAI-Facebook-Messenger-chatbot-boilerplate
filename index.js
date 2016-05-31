@@ -3,8 +3,8 @@
 const config = require('./config');
 const bodyParser = require('body-parser');
 const express = require('express');
-const request = require('request');
 const Wit = require('node-wit').Wit;
+const FB = require('./facebook.action');
 
 // Webserver parameter
 const PORT = process.env.PORT || 3000;
@@ -16,36 +16,6 @@ if (!config.FB_PAGE_ID) {
 if (!config.FB_PAGE_TOKEN) {
     throw new Error('missing FB_PAGE_TOKEN');
 }
-
-// Messenger API specific code
-
-// See the Send API reference
-// https://developers.facebook.com/docs/messenger-platform/send-api-reference
-const fbReq = request.defaults({
-    uri: 'https://graph.facebook.com/me/messages',
-    method: 'POST',
-    json: true,
-    qs: {access_token: config.FB_PAGE_TOKEN},
-    headers: {'Content-Type': 'application/json'},
-});
-
-const fbMessage = (recipientId, msg, cb) => {
-    const opts = {
-        form: {
-            recipient: {
-                id: recipientId,
-            },
-            message: {
-                text: msg,
-            },
-        },
-    };
-    fbReq(opts, (err, resp, data) => {
-        if (cb) {
-            cb(err || data.error && data.error.message, data);
-        }
-    });
-};
 
 // See the Webhook reference
 // https://developers.facebook.com/docs/messenger-platform/webhook-reference
@@ -64,19 +34,17 @@ const getFirstMessagingEntry = (body) => {
     return val || null;
 };
 
-// Wit.ai bot specific code
-
-// This will contain all user sessions.
-// Each session has an entry:
-// sessionId -> {fbid: facebookUserId, context: sessionState}
 const sessions = {};
+const findOrCreateSession = (sessions, fbid, cb) => {
 
-const findOrCreateSession = (fbid) => {
-    if (!fbid in sessions) {
-        sessions[fbid] = {context: {}};
+    if (!sessions[fbid]) {
+        console.log("New Session for:", fbid);
+        sessions[fbid] = session;
+        cb(sessions, fbid);
     }
-    return fbid;
 };
+
+// Wit.ai bot specific code
 
 // Import our bot actions and setting everything up
 const actions = require('./wit.actions');
@@ -105,7 +73,7 @@ app.get('/', (req, res) => {
 app.post('/', (req, res) => {
     // Parsing the Messenger API response
     const messaging = getFirstMessagingEntry(req.body);
-    if (messaging && messaging.message && messaging.recipient.id === config.FB_PAGE_ID) {
+    if (messaging && messaging.recipient.id === config.FB_PAGE_ID) {
         // Yay! We got a new message!
 
         // We retrieve the Facebook user ID of the sender
@@ -113,50 +81,66 @@ app.post('/', (req, res) => {
 
         // We retrieve the user's current session, or create one if it doesn't exist
         // This is needed for our bot to figure out the conversation history
-        const sessionId = findOrCreateSession(sender);
+        findOrCreateSession(sessions, sender, (sessions, sessionId) => {
+            // We retrieve the message content
+            if (messaging.message) {
+                //MESSAGE
 
-        // We retrieve the message content
-        const msg = messaging.message.text;
-        const atts = messaging.message.attachments;
+                const msg = messaging.message.text;
+                const atts = messaging.message.attachments;
 
-        if (atts) {
-            // We received an attachment
+                if (atts) {
+                    // We received an attachment
 
-            // Let's reply with an automatic message
-            fbMessage(
-                sender,
-                'Sorry I can only process text messages for now.'
-            );
-        } else if (msg) {
-            // We received a text message
+                    // Let's reply with an automatic message
+                    FB.sendText(
+                        sender,
+                        'Sorry I can only process text messages for now.'
+                    );
+                } else if (msg) {
+                    // We received a text message
 
-            // Let's forward the message to the Wit.ai Bot Engine
-            // This will run all actions until our bot has nothing left to do
-            wit.runActions(
-                sessionId, // the user's current session
-                msg, // the user's message
-                sessions[sessionId].context, // the user's current session state
-                (error, context) => {
-                    if (error) {
-                        console.log('Oops! Got an error from Wit:', error);
-                    } else {
-                        // Our bot did everything it has to do.
-                        // Now it's waiting for further messages to proceed.
-                        console.log('Waiting for futher messages.');
+                    // Let's forward the message to the Wit.ai Bot Engine
+                    // This will run all actions until our bot has nothing left to do
+                    wit.runActions(
+                        sessionId, // the user's current session
+                        msg, // the user's message
+                        sessions[sessionId].context, // the user's current session state
+                        (error, context) => {
+                            if (error) {
+                                console.log('Oops! Got an error from Wit:', error);
+                            } else {
+                                // Our bot did everything it has to do.
+                                // Now it's waiting for further messages to proceed.
+                                console.log('Waiting for futher messages.');
 
-                        // Based on the session state, you might want to reset the session.
-                        // This depends heavily on the business logic of your bot.
-                        // Example:
-                        // if (context['done']) {
-                        //   delete sessions[sessionId];
-                        // }
+                                // Based on the session state, you might want to reset the session.
+                                // This depends heavily on the business logic of your bot.
+                                // Example:
+                                // if (context['done']) {
+                                //   delete sessions[sessionId];
+                                // }
 
-                        // Updating the user's current session state
-                        sessions[sessionId].context = context;
-                    }
+                                // Updating the user's current session state
+                                sessions[sessionId].context = context;
+                                connection.query("UPDATE session SET context=? WHERE fbid=?", [JSON.stringify(sessions[sessionId]), sessionId]);
+                            }
+                        }
+                    );
                 }
-            );
-        }
+            } else if (messaging.postback) {
+                //POSTBACK
+                const postback = messaging.postback;
+
+                if (postback) {
+                    var context = sessions[sessionId].context;
+                    FB.handlePostback(sessionId, context, postback.payload);
+                }
+            } else {
+                //delivery confirmation
+                //mids etc
+            }
+        });
     }
     res.sendStatus(200);
 });
