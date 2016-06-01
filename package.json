@@ -17,7 +17,7 @@
     "start": "node index.js"
   },
   "repository": "https://github.com/JakobReiter/viennabots-wit",
-  "author": "Jakob Reiter <jakob.reiter.io@gamil.com>",
+  "author": "Jakob Reiter <jakob.reiter.io@gmail.com>",
   "dependencies": {
     "node-fetch": "^1.5.1",
     "node-uuid": "^1.4.7",
