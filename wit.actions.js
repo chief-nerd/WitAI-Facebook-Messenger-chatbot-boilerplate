@@ -1,7 +1,6 @@
 'use strict';
 
 const async = require('async');
-const mysql = require('mysql');
 const FB = require("./facebook.action");
 
 module.exports = {
