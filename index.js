@@ -123,7 +123,7 @@ app.post('/', (req, res) => {
 
                                 // Updating the user's current session state
                                 sessions[sessionId].context = context;
-                                connection.query("UPDATE session SET context=? WHERE fbid=?", [JSON.stringify(sessions[sessionId]), sessionId]);
+                                //connection.query("UPDATE session SET context=? WHERE fbid=?", [JSON.stringify(sessions[sessionId]), sessionId]);
                             }
                         }
                     );
