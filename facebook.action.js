@@ -32,11 +32,11 @@ module.exports = {
         switch (payload) {
             case CTA_SAY_FUNNY:
                 this.sendText(recipientId, "Bot Bot Bot", () => {
+                    context["welcome_joke"] = "told";
+                    cb(context);
                 });
                 break;
         }
-
-        cb(context);
     },
 
     /******* GENERIC FB FUNCTION *******/

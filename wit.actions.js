@@ -32,7 +32,7 @@ module.exports = {
 
         async.forEachOf(entities, (entity, key, cb) => {
             const value = firstEntityValue(entity);
-            console.error("Result", key, value);
+            //console.error("Result", key, value);
             if (value != null && (context[key] == null || context[key] != value)) {
 
                 switch (key) {

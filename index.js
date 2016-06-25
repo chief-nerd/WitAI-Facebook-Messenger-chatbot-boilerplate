@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const express = require('express');
 const Wit = require('node-wit').Wit;
 const FB = require('./facebook.action');
+const async = require('async');
 
 // Webserver parameter
 const PORT = process.env.PORT || 3000;
@@ -84,66 +85,98 @@ app.post('/', (req, res) => {
         // This is needed for our bot to figure out the conversation history
         findOrCreateSession(sessions, sender, (sessions, sessionId) => {
             // We retrieve the message content
-            if (messaging.message) {
-                //MESSAGE
 
-                const msg = messaging.message.text;
-                const atts = messaging.message.attachments;
+            //First do Postbacks -> then go with this context to wit.ai
+            async.series(
+                [
+                    function (callback) {
+                        if (messaging.postback) {
+                            //POSTBACK
+                            const postback = messaging.postback;
 
-                if (atts) {
-                    // We received an attachment
-
-                    // Let's reply with an automatic message
-                    FB.sendText(
-                        sender,
-                        'Sorry I can only process text messages for now.'
-                    );
-                } else if (msg) {
-                    // We received a text message
-
-                    // Let's forward the message to the Wit.ai Bot Engine
-                    // This will run all actions until our bot has nothing left to do
-                    wit.runActions(
-                        sessionId, // the user's current session
-                        msg, // the user's message
-                        sessions[sessionId].context, // the user's current session state
-                        (error, context) => {
-                            if (error) {
-                                console.log('Oops! Got an error from Wit:', error);
-                            } else {
-                                // Our bot did everything it has to do.
-                                // Now it's waiting for further messages to proceed.
-                                console.log('Waiting for futher messages.');
-
-                                // Based on the session state, you might want to reset the session.
-                                // This depends heavily on the business logic of your bot.
-                                // Example:
-                                // if (context['done']) {
-                                //   delete sessions[sessionId];
-                                // }
-
-                                // Updating the user's current session state
-                                sessions[sessionId].context = context;
-                                //connection.query("UPDATE session SET context=? WHERE fbid=?", [JSON.stringify(sessions[sessionId]), sessionId]);
+                            if (postback) {
+                                var context = sessions[sessionId].context;
+                                FB.handlePostback(sessionId, context, postback.payload, (context) => {
+                                    callback(null, context);
+                                });
                             }
+                            } else {
+                            callback(null, {});
                         }
-                    );
-                }
-            } else if (messaging.postback) {
-                //POSTBACK
-                const postback = messaging.postback;
+                    },
+                    function (callback) {
+                        if (messaging.message) {
+                            //MESSAGE
 
-                if (postback) {
-                    var context = sessions[sessionId].context;
-                    FB.handlePostback(sessionId, context, postback.payload, (context) => {
-                        sessions[sessionId].context = context;
-                    });
+                            const msg = messaging.message.text;
+                            const atts = messaging.message.attachments;
+
+                            if (atts) {
+                                // We received an attachment
+
+                                // Let's reply with an automatic message
+                                FB.sendText(
+                                    sender,
+                                    'Sorry I can only process text messages for now.'
+                                );
+                                callback(null, {});
+
+                            } else {
+
+                                console.log("Run wit with context", sessions[sessionId].context);
+                                // Let's forward the message to the Wit.ai Bot Engine
+                                // This will run all actions until our bot has nothing left to do
+                                wit.runActions(
+                                    sessionId, // the user's current session
+                                    msg, // the user's message
+                                    sessions[sessionId].context, // the user's current session state
+                                    (error, context) => {
+                                        if (error) {
+                                            console.log('Oops! Got an error from Wit:', error);
+                                        } else {
+                                            // Our bot did everything it has to do.
+                                            // Now it's waiting for further messages to proceed.
+                                            console.log('Waiting for futher messages.');
+
+                                            // Based on the session state, you might want to reset the session.
+                                            // This depends heavily on the business logic of your bot.
+                                            // Example:
+                                            // if (context['done']) {
+                                            //   delete sessions[sessionId];
+                                            // }
+
+                                            // Updating the user's current session state
+                                            callback(null, context);
+                                        }
+                                    }
+                                );
+
+                            }
+                        } else {
+                            //delivery confirmation
+                            //mids etc
+
+                            callback(null, {});
+                            }
+                    },
+                ],
+                function (err, results) {
+
+                    /* var newContext = sessions[sessionId].context;
+                     console.log("Old context", newContext);
+                     for (let context_return of results) {
+
+                     newContext = newContext.concat(context_return);
+                     console.log("New after adding", context_return, newContext);
+                     }
+
+                     sessions[sessionId].context = newContext;*/
+
+                    console.log("Session context", sessions[sessionId].context);
                 }
-            } else {
-                //delivery confirmation
-                //mids etc
+            );
             }
-        });
+        );
     }
     res.sendStatus(200);
 });
