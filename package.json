@@ -16,7 +16,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
   },
-  "repository": "https://github.com/JakobReiter/viennabots-wit",
+  "repository": "https://github.com/JakobReiter/WitAI-Facebook-Messenger-chatbot-boilerplate",
   "author": "Jakob Reiter <jakob.reiter.io@gmail.com>",
   "dependencies": {
     "node-fetch": "^1.5.1",
@@ -24,7 +24,6 @@
     "request": "^2.71.0",
     "body-parser": "^1.15.1",
     "express": "^4.13.4",
-    "meetup-api": "^1.3.10",
     "node-wit": "^3.3.0",
     "async": "^2.0.0-rc.5"
   }
