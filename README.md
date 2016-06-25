@@ -3,9 +3,14 @@ This is a Boilerplate for NodeJS that already includes FB-Messenger and Wit.ai f
 
 ## Install
 * open a terminal
+* clone the git repository
+* delete the existing git `rm -rf ./.git`
 * execute `npm install` 
-* edit the config file at [./config.js]
-* start the server with `node index.js`
+* edit the config file at [config.js](./config.js) with your values
+* start the server with `npm start`
+
+## Optional
+* execute `npm run setWelcome` to set the Facebook Welcome Message
 
 ## Extend
-Edit the the wit.actions.js file to add your own actions
+Edit the the [wit.actions.js](./wit.actions.js) file to add your own actions

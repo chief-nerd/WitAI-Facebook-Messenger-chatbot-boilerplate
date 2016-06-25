@@ -135,7 +135,9 @@ app.post('/', (req, res) => {
 
                 if (postback) {
                     var context = sessions[sessionId].context;
-                    FB.handlePostback(sessionId, context, postback.payload);
+                    FB.handlePostback(sessionId, context, postback.payload, (context) => {
+                        sessions[sessionId].context = context;
+                    });
                 }
             } else {
                 //delivery confirmation
