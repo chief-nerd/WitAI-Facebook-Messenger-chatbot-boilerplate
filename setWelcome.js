@@ -11,10 +11,11 @@ console.log("+++ Setting up Welcome Message +++");
 const endpoint = "https://graph.facebook.com/v2.6/";
 const params = "/thread_settings?access_token=";
 
-const postcontent = (generatePostContent());
-console.log(postcontent);
+var postcontent = generatePostContent();
 
-fetch(endpoint + config.FB_PAGE_ID + params + config.FB_PAGE_TOKEN, {
+const finalurl = endpoint + config.FB_PAGE_ID + params + config.FB_PAGE_TOKEN;
+
+fetch(finalurl, {
         method: 'POST',
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(postcontent)
@@ -22,10 +23,27 @@ fetch(endpoint + config.FB_PAGE_ID + params + config.FB_PAGE_TOKEN, {
 ).then(function (res) {
     return res.json();
 }).then(function (json) {
-    console.log(json);
+    if (json.result)
+        console.log("\n" + json.result);
+    if (json.error)
+        console.error(json);
 });
 
 function generatePostContent() {
+
+    /* Text only
+     return {
+     "setting_type": "call_to_actions",
+     "thread_state": "new_thread",
+     "call_to_actions": [
+     {
+     "message": {
+     "text": "Welcome to my Bot!"
+     }
+     }
+     ]
+     };
+     */
 
     return {
         "setting_type": "call_to_actions",
@@ -35,9 +53,20 @@ function generatePostContent() {
                 "message": {
                     "attachment": {
                         "type": "template",
-                        "payload": FB.generatePayloadElement("Welcome", null, null, null, [
-                            FB.generateActionButton("Say something funny", "CTA_SAY_FUNNY"),
-                        ])
+                        "payload": {
+                            "template_type": "generic",
+                            "elements": [
+                                FB.generatePayloadElement(
+                                    "Welcome to my Bot",
+                                    null,
+                                    null,
+                                    null,
+                                    [
+                                        FB.generateActionButton("Say something funny", "CTA_FUNNY"),
+                                    ]
+                                )
+                            ]
+                        }
                     }
                 }
             }
