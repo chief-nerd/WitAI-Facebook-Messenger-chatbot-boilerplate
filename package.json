@@ -14,7 +14,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "install": "node setWelcome.js"
   },
   "repository": "https://github.com/JakobReiter/WitAI-Facebook-Messenger-chatbot-boilerplate",
   "author": "Jakob Reiter <jakob.reiter.io@gmail.com>",
