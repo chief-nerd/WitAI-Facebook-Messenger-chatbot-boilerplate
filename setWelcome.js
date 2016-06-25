@@ -61,9 +61,7 @@ function generatePostContent() {
                                     null,
                                     null,
                                     null,
-                                    [
-                                        FB.generateActionButton("Say something funny", "CTA_FUNNY"),
-                                    ]
+                                    FB.generateActionButton("Say something funny", "CTA_SAY_FUNNY")
                                 )
                             ]
                         }

@@ -12,18 +12,29 @@ const FBRequest = request.defaults({
 });
 
 const TEMPLATE_GENERIC = "generic";
-const TEMPLATE_BUTTON = "button";
+const TEMPLATE_BUTTON = "button"; //Unused by FB
 
-const BUTTON_MORE = "BUTTON_MORE";
+const CTA_SAY_FUNNY = "CTA_SAY_FUNNY";
 
 module.exports = {
 
-
-    handlePostback(recipientId, context, payload) {
-        console.log("Payload for", recipientId, payload, context);
+    /**
+     * handles the clicks from Structured Messages
+     *
+     * @param recipientId
+     * @param context
+     * @param payload
+     * @param cb callback function
+     */
+    handlePostback(recipientId, context, payload, cb) {
+        console.log("Received payload for", recipientId, payload, context);
 
         switch (payload) {
-            case MORE:
+            case CTA_SAY_FUNNY:
+                this.sendText(recipientId, "Bot Bot Bot", () => {
+                    context["welcome_joke"] = "told";
+                    cb(context);
+                });
                 break;
         }
     },
@@ -32,6 +43,8 @@ module.exports = {
 
     /**
      * Send a plain Text Message to Facebook
+     *
+     * @see https://developers.facebook.com/docs/messenger-platform/send-api-reference#request
      *
      * @param recipientId   ID          Recipient ID
      * @param msg           String      The Message itself
@@ -60,43 +73,15 @@ module.exports = {
     },
 
     /**
-     * Send a Structured Message to a FB Conversation
-     *
-     * @param recipientId   ID
-     * @param payload       Payload Element
-     * @param cb            Callback
-     */
-    sendStructuredMessage(recipientId, payload, cb) {
-
-        const opts = {
-            form: {
-                recipient: {
-                    id: recipientId,
-                },
-                message: {
-                    attachment: {
-                        type: "template",
-                        payload: payload
-                    }
-                }
-            },
-        };
-
-        FBRequest(opts, (err, resp, data) => {
-            if (cb) {
-                cb(err || data.error && data.error.message, data);
-            }
-        });
-    },
-
-    /**
      * Generic Structured Message Function
      *
      * @param recipientId
-     * @param elements
+     * @param elements Array of Elements
      * @param cb
      *
-     * @uses sendStructuredMessage
+     * @see https://developers.facebook.com/docs/messenger-platform/send-api-reference#request
+     *
+     * @uses _sendFBRequest
      *
      * Limits:
      * Title: 80 characters
@@ -108,15 +93,46 @@ module.exports = {
      * Image Dimensions
      * Image ratio is 1.91:1
      */
-    sendGenericStrMsg(recipientId, elements, cb) {
+    sendStructuredMessage(recipientId, elements, cb) {
 
-        if (elements.length > 10) throw new Error("FB does not allow more then 10 payload elements");
+        if (!Array.isArray(elements)) elements = [elements];
+        if (elements.length > 10) throw new Error("sendStructuredMessage: FB does not allow more then 10 payload elements");
 
         const payload = {
             "template_type": TEMPLATE_GENERIC,
-            "elements": elements
+            "elements": elements,
         };
-        this.sendStructuredMessage(recipientId, payload, cb);
+        this._sendFBRequest(recipientId, payload, cb);
+    },
+
+    /**
+     * Send a Structured Message to a FB Conversation
+     *
+     * @param recipientId   ID
+     * @param payload       Payload Element
+     * @param cb            Callback
+     */
+    _sendFBRequest(recipientId, payload, cb) {
+
+        const opts = {
+            form: {
+                recipient: {
+                    id: recipientId,
+                },
+                message: {
+                    attachment: {
+                        type: "template",
+                        payload: payload,
+                    }
+                }
+            },
+        };
+
+        FBRequest(opts, (err, resp, data) => {
+            if (cb) {
+                cb(err || data.error && data.error.message, data);
+            }
+        });
     },
 
     /**
@@ -132,6 +148,9 @@ module.exports = {
      * @returns {{title: *, subtitle: *, item_url: *, image_url: *, buttons: *}}
      */
     generatePayloadElement(title, click_url, image_url, sub_title, buttons) {
+
+        if (!Array.isArray(buttons)) buttons = [buttons];
+
         return {
             title: title,
             subtitle: sub_title,
@@ -165,7 +184,7 @@ module.exports = {
         return {
             "type": "postback",
             "title": title,
-            "payload": payload
+            "payload": payload,
         };
     },
 };
