@@ -25,7 +25,7 @@ const getFirstMessagingEntry = (body) => {
             Array.isArray(body.entry) &&
             body.entry.length > 0 &&
             body.entry[0] &&
-            body.entry[0].id == config.FB_PAGE_ID &&
+            body.entry[0].id === config.FB_PAGE_ID &&
             body.entry[0].messaging &&
             Array.isArray(body.entry[0].messaging) &&
             body.entry[0].messaging.length > 0 &&
@@ -124,7 +124,7 @@ app.post('/', (req, res) => {
 
                                 // Updating the user's current session state
                                 sessions[sessionId].context = context;
-                                connection.query("UPDATE session SET context=? WHERE fbid=?", [JSON.stringify(sessions[sessionId]), sessionId]);
+                                //connection.query("UPDATE session SET context=? WHERE fbid=?", [JSON.stringify(sessions[sessionId]), sessionId]);
                             }
                         }
                     );
