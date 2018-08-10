@@ -13,4 +13,4 @@ This is a Boilerplate for NodeJS that already includes FB-Messenger and Wit.ai f
 * execute `npm run setWelcome` to set the Facebook Welcome Message
 
 ## Extend
-Edit the the [wit.actions.js](./wit.actions.js) file to add your own actions
+Edit the [wit.actions.js](./wit.actions.js) file to add your own actions
